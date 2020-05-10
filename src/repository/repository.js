@@ -2,34 +2,46 @@
 // and exposes some functions for accessing the data.
 
 //need factory function here because implementation can lead to breaking changes while interface does not
+// const getDatabase = require("../db/mongo.js");
+// const dbInterface = require("../db/dbInterface.js");
+// const dbMethods = require("../db/dbMethods.js");
+
 let repo = (db) => {
+  // TODO: implement dependency injection to abstract database
+  //   let collection = deMethods.getCollection(dbInterface(db));
   let collection = db.collection("movies");
 
   const getAllMovies = () => {
-      return new Promise((resolve, reject) => {
-        collection.find().toArray((err, items) => {
-            if(!err){
-                resolve(items);
-            }else{
-                reject(new Error(`An error occurred when fetching all movies, err: ${err}`))
-            }
-          })
-      })
-  }
+    return new Promise((resolve, reject) => {
+      collection.find().toArray((err, items) => {
+        if (!err) {
+          resolve(items);
+        } else {
+          reject(
+            new Error(`An error occurred when fetching all movies, err: ${err}`)
+          );
+        }
+      });
+    });
+  };
 
   const getMovieById = (id) => {
-      return new Promise((resolve, reject) => {
-        const projection = { _id: 0, id: 1, title: 1, format: 1 }
-          const sendMove = (err, movie){
-              if(err){
-                  reject(new Error(`An error occurred when fetching a movie with ${id}, err:${err}`));
-              }else{
-                  resolve(movie)
-              }
-          }
-          // fetch a movie by id -- mongodb syntax
-          collection.findOne({id: id}, projection, sendMovie)
-        });
+    return new Promise((resolve, reject) => {
+      const projection = { _id: 0, id: 1, title: 1, format: 1 };
+      const sendMovie = (err, movie) => {
+        if (err) {
+          reject(
+            new Error(
+              `An error occurred when fetching a movie with ${id}, err:${err}`
+            )
+          );
+        } else {
+          resolve(movie);
+        }
+      };
+      // fetch a movie by id -- mongodb syntax
+      collection.findOne({ id: id }, projection, sendMovie);
+    });
   };
 
   const getMoviePremiers = () => {
@@ -66,17 +78,15 @@ let repo = (db) => {
   //this will close the databse connection:
 
   const disconnect = () => {
-      db.close();
-  }
+    db.close();
+  };
 
-  return Object.create(
-    {
-      getMovieById,
-      getMoviePremiers,
-      getAllMovies,
-      disconnect
-    }
-  );
+  return Object.create({
+    getMovieById,
+    getMoviePremiers,
+    getAllMovies,
+    disconnect,
+  });
 };
 
 let connect = (connection) =>

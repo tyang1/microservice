@@ -1,38 +1,31 @@
 "use strict";
-// we load all the depencies we need
 const { EventEmitter } = require("events");
 const server = require("./server/server");
 const repository = require("./repository/repository");
 const config = require("./config/");
 const mediator = new EventEmitter();
 
-// verbose logging when we are starting the server
 console.log("--- Movies Service ---");
 console.log("Connecting to movies repository...");
 
-// log unhandled execpetions
 process.on("uncaughtException", (err) => {
   console.error("Unhandled Exception", err);
 });
+
 process.on("uncaughtRejection", (err, promise) => {
   console.error("Unhandled Rejection", err);
 });
 
-//setting event listeners on db connection
-// e.g. for db.ready event, we want to send the
-// connected db to repository, and then serve the server
-// with the ready to use db handlers
-const { db, dbSettings, serverSettings } = config;
-
-let rep;
-mediator.on("db.ready", (connection) => {
+mediator.on("db.ready", (db) => {
+  let rep;
   repository
-    .connect(connection)
+    .connect(db)
     .then((repo) => {
-      console.log("Repository Connected. Starting Server");
+      console.log("Connected. Starting Server");
       rep = repo;
       return server.start({
-        port: serverSettings.port,
+        port: config.serverSettings.port,
+        // ssl: config.serverSettings.ssl,
         repo,
       });
     })
@@ -50,5 +43,6 @@ mediator.on("db.error", (err) => {
   console.error(err);
 });
 
-db.connect(dbSettings, mediator);
+config.db.connect(config.dbSettings, mediator);
+
 mediator.emit("boot.ready");

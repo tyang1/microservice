@@ -21,7 +21,7 @@ function switchToServer {
 function startReplicaSet {
   # init replica set in mongodb master
   wait_for_databases $2 "$4"
-  docker exec -i $1 bash -c 'mongo --eval "rs.initiate() && rs.conf()" --port '$p' -u $MONGO_SUPER_ADMIN -p $MONGO_PASS_SUPER --authenticationDatabase="admin"'
+  docker exec -i $1 bash -c 'mongo --eval "rs.initiate() && rs.conf()" --port '$p' -u $MONGO_SUPER_ADMIN -pwd $MONGO_PASS_SUPER --authenticationDatabase="admin"'
 }
 
 function createDockerVolume {
@@ -88,8 +88,7 @@ function removeAndCreateContainer {
   --env-file $env \
   $serv \
   -p $port \
-  -d mongo --smallfiles \
-  --keyFile /data/keyfile/$keyfile \
+  -d mongo --keyFile /data/keyfile/$keyfile \
   --replSet $rs \
   --storageEngine wiredTiger \
   --port $p
@@ -121,18 +120,22 @@ function createMongoDBNode {
 function wait_for {
   echo ">>>>>>>>>>> waiting for mongodb"
   start_ts=$(date +%s)
-  # while :
-  # do
-    # (echo > /dev/tcp/$1/$2) >/dev/null 2>&1
-    # result=$?
-    # if [[ $result -eq 0 ]]; then
+  while :
+  do
+  # When redirecting data streams, & means whatever follows is a file descriptor, not a filename. 
+    (echo > /dev/tcp/$1/$2) >/dev/null 2>&1
+    # checking to see if tcp connection is successful:
+    bash -c cat < /dev/null > /dev/tcp/$1/$2; echo $?
+    result=$?
+    echo "result: $result"
+    if [[ $result -eq 0 ]]; then
         end_ts=$(date +%s)
         echo "<<<<< $1:$2 is available after $((end_ts - start_ts)) seconds"
         sleep 3
-        # break
-    # fi
+        break
+    fi
     sleep 5
-  # done
+  done
 }
 
 function wait_for_databases {
@@ -161,8 +164,7 @@ function add_replicas {
   for server in worker1 worker2
    do
     rs="rs.add('$server:27017')"
-    add='mongo -u $MONGO_REPLICA_ADMIN 
-         -p $MONGO_PASS_REPLICA --eval "'$rs'" --authenticationDatabase="admin"'
+    add='mongo -u $MONGO_REPLICA_ADMIN -p $MONGO_PASS_REPLICA --eval "'$rs'" --authenticationDatabase="admin"'
     sleep 2
     wait_for_databases $server
     docker exec -i mongoNode1 bash -c "$add"
@@ -213,6 +215,7 @@ function main {
   init_mongo_primary
   init_mongo_secondaries
   add_replicas manager1 mongoNode1
+  check_status manager1 mongoNode1
   # add_moviesdb_test
 }
 

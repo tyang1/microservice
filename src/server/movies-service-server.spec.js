@@ -1,16 +1,18 @@
-// const server = require("./server");
-// const should = require("should");
+const server = require("./server");
+const should = require("should");
 
-// describe("Server", () => {
-//   it("should require a port to start", () => {
-//     return server.start({
-//       repo: {},
-//     });
-//   }).should.be.rejectedWith(/port/);
+describe("Server", () => {
+  it("should require a port to start", () => {
+    let result = server.start({
+      repo: {},
+    });
+    return should(result).be.rejectedWith(/port/);
+  });
 
-//   it("should require a repository to start", () => {
-//     return server.start({
-//       port: {},
-//     });
-//   }).should.be.rejectedWith(/repo/);
-// });
+  it("should require a repository to start", () => {
+    let result = server.start({
+      port: {},
+    });
+    return should(result).be.rejectedWith(/repo/);
+  });
+});

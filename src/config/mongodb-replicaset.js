@@ -1,6 +1,8 @@
 const MongoClient = require("mongodb");
 
 const getMongoURL = (options) => {
+  //options.servers
+  //options.db
   const url = options.servers.reduce(
     (prev, cur) => prev + cur + ",",
     "mongodb://"
@@ -9,11 +11,12 @@ const getMongoURL = (options) => {
   return `${url.substr(0, url.length - 1)}/${options.db}`;
 };
 
+//mongoDB function to connect, open and authenticate
 const connect = (options, mediator) => {
-  mediator.once("boot.ready", () => {
-    console.log("mongourl", getMongoURL(options));
+  let url = getMongoURL(options);
+  mediator.on("boot.ready", () => {
     MongoClient.connect(
-      getMongoURL(options),
+      url,
       {
         db: options.dbParameters(),
         server: options.serverParameters(),
@@ -21,15 +24,10 @@ const connect = (options, mediator) => {
       },
       (err, db) => {
         if (err) {
-          mediator.emit("db.error", err);
+          mediator.emit('db.error', err)
+        }else{
+          mediator.emit('db ready', db)
         }
-
-        db.admin().authenticate(options.user, options.pass, (err, result) => {
-          if (err) {
-            mediator.emit("db.error", err);
-          }
-          mediator.emit("db.ready", db);
-        });
       }
     );
   });
